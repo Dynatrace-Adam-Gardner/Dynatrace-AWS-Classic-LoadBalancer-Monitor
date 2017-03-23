@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<!-- plugin.xml file written by Dynatrace Client 6.5.9 -->
+<plugin>
+  <extension point="com.dynatrace.diagnostics.pdk.pluginconfig" id="com.dynatrace.AWSClassicLoadBalancer" name="AWS Cloudwatch Classic Load Balancer">
+    <information>
+      <category value="" />
+      <displayname value="AWS Cloudwatch Classic Load Balancer" />
+      <description value="Pull metrics from AWS cloudwatch into Dynatrace for the Classic Load Balancer Type" />
+      <supportlevel value="unsupported" />
+    </information>
+    <configuration>
+      <property key="accessKey" label="AWS Access Key" type="string" description="AWS Access Key" default="" multiline="false" />
+      <property key="secretKey" label="AWS Secret Key" type="password" description="AWS Secret Key" default="" />
+      <property key="awsRegion" label="AWS Region" type="string" description="eg. eu-west-2" default="eu-west-2" multiline="false" />
+      <property key="loadBalancerName" label="Load Balancer Name" type="string" description="Load balancer name" default="" multiline="false" />
+      <property key="dataGranularity" label="Data Granularity" type="list" description="How far back in history is this data for? eg. Setting this to &quot;5 minutes&quot; and charting &quot;Average&quot; would give the datapoint for the average value of the previous 5 minutes." default="5 Minutes">
+        <list>
+          <item value="1 Minute" />
+          <item value="5 Minutes" />
+          <item value="10 Minutes" />
+          <item value="15 Minutes" />
+          <item value="30 Minutes" />
+          <item value="1 Hour" />
+        </list>
+      </property>
+    </configuration>
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitor" id="com.dynatrace.AWSClassicLoadBalancer.monitor" name="AWS Classic Load Balancer Monitor">
+    <plugin configid="com.dynatrace.AWSClassicLoadBalancer" class="com.dynatrace.AWSClassicLoadBalancer.Plugin" />
+  </extension>
+  <extension point="com.dynatrace.diagnostics.pdk.monitormetricgroup" id="com.dynatrace.AWSClassicLoadBalancer.monitor.classicloadbalancer.metrics" name="Classic Load Balancer Metrics">
+    <metricgroup monitorid="com.dynatrace.AWSClassicLoadBalancer.monitor">
+      <metric defaultrate="purepath" name="BackendConnectionErrors" unit="number" description="The number of connections that were not successfully established between the load balancer and the registered instances." />
+      <metric defaultrate="purepath" name="HealthyHostCount" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_Backend_2XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_Backend_3XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_Backend_4XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_Backend_5XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_ELB_4XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="HTTPCode_ELB_5XX" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="Latency" unit="s" description="My metric description ..." />
+      <metric defaultrate="purepath" name="RequestCount" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="SpilloverCount" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="SurgeQueueLength" unit="number" description="My metric description ..." />
+      <metric defaultrate="purepath" name="UnHealthyHostCount" unit="number" description="My metric description ..." />
+    </metricgroup>
+  </extension>
+</plugin>

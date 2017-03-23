@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: com.dynatrace.AWSClassicLoadBalancer;singleton:=t
+ rue
+Bundle-Name: AWS Cloudwatch Classic Load Balancer
+Bundle-Version: 1.0.0
+Bundle-ClassPath: .,lib/aws-java-sdk-1.11.105.jar,lib/com.dynatrace.di
+ agnostics.sdk.jar,lib/commons-logging-1.2.jar,lib/httpclient-4.5.1.ja
+ r,lib/httpcore-4.4.3.jar,lib/jackson-annotations-2.6.0.jar,lib/jackso
+ n-core-2.6.6.jar,lib/jackson-databind-2.6.6.jar,lib/joda-time-2.8.1.j
+ ar
+Require-Bundle: com.dynatrace.diagnostics.sdk
+Bundle-ManifestVersion: 2
+Bundle-Vendor: Dynatrace
+
