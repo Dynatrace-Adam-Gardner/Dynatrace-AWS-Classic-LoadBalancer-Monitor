@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
+
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
@@ -27,7 +28,6 @@ import com.dynatrace.diagnostics.pdk.MonitorEnvironment;
 import com.dynatrace.diagnostics.pdk.MonitorMeasure;
 import com.dynatrace.diagnostics.pdk.Status;
 
-
 public class Plugin implements Monitor
 {
 	private static final Logger log = Logger.getLogger(Plugin.class.getName());
@@ -40,7 +40,7 @@ public class Plugin implements Monitor
 	/*
 	 * We will push all aggregations to AppMon
 	 * However, remember that not all metrics will be useful.
-	 * See: http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/elb-metricscollected.html#load-balancer-metric-dimensions-alb
+	 * See: http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/elb-metricscollected.html#load-balancer-metric-dimensions-clb
 	 */
 	private List<String> m_oAggregationList = new ArrayList<String>();
 	
@@ -60,7 +60,6 @@ public class Plugin implements Monitor
         m_oLBMetrics.add("SpilloverCount");
         m_oLBMetrics.add("SurgeQueueLength");
         m_oLBMetrics.add("UnHealthyHostCount");
-        
         
         m_oAggregationList.add(IConstants.AGGREGATION_MINIMUM);
         m_oAggregationList.add(IConstants.AGGREGATION_AVERAGE);

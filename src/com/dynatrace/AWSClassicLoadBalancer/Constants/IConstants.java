@@ -21,8 +21,8 @@ public interface IConstants
 	public static final String AWS_NAMESPACE = "AWS/ELB";
 	public static final String DIMENSION_NAME = "LoadBalancerName";
 	
-	// Data Granularities
 	/*
+	 * Data Granularities
 	 * Possible Values
 	 * "1 Minute" | "5 Minutes" | "10 Minutes" | "15 Minutes" | "30 Minutes" | "1 Hour"
 	 */
@@ -32,5 +32,4 @@ public interface IConstants
 	public static final String DATA_GRANULARITY_15MINS = "15 Minutes";
 	public static final String DATA_GRANULARITY_30MINS = "30 Minutes";
 	public static final String DATA_GRANULARITY_1HOUR = "1 Hour";
-
 }
