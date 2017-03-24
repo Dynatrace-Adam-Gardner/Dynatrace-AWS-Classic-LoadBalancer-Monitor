@@ -12,7 +12,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
-
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration;
@@ -27,13 +26,15 @@ import com.dynatrace.diagnostics.pdk.Monitor;
 import com.dynatrace.diagnostics.pdk.MonitorEnvironment;
 import com.dynatrace.diagnostics.pdk.MonitorMeasure;
 import com.dynatrace.diagnostics.pdk.Status;
-import com.dynatrace.diagnostics.pdk.TaskEnvironment;
 
 
-public class Plugin implements Monitor {
-
+public class Plugin implements Monitor
+{
 	private static final Logger log = Logger.getLogger(Plugin.class.getName());
 
+	/* Hold the list of possible AWS metrics.
+	 * See: http://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/elb-metricscollected.html#loadbalancing-metrics-clb
+	 */
 	private List<String> m_oLBMetrics = new ArrayList<String>();
 	
 	/*
@@ -43,28 +44,6 @@ public class Plugin implements Monitor {
 	 */
 	private List<String> m_oAggregationList = new ArrayList<String>();
 	
-	/**
-	 * Initializes the Plugin. This method is called in the following cases:
-	 * <ul>
-	 * <li>before <tt>execute</tt> is called the first time for this
-	 * scheduled Plugin</li>
-	 * <li>before the next <tt>execute</tt> if <tt>teardown</tt> was called
-	 * after the last execution</li>
-	 * </ul>
-	 * <p>
-	 * If the returned status is <tt>null</tt> or the status code is a
-	 * non-success code then {@link Plugin#teardown() teardown()} will be called
-	 * next.
-	 * <p>
-	 * Resources like sockets or files can be opened in this method.
-	 * @param env
-	 *            the configured <tt>MonitorEnvironment</tt> for this Plugin;
-	 *            contains subscribed measures, but <b>measurements will be
-	 *            discarded</b>
-	 * @see Plugin#teardown()
-	 * @return a <tt>Status</tt> object that describes the result of the
-	 *         method call
-	 */
 	@Override
 	public Status setup(MonitorEnvironment env) throws Exception
 	{	
@@ -92,28 +71,6 @@ public class Plugin implements Monitor {
 		return new Status(Status.StatusCode.Success);
 	}
 
-	/**
-	 * Executes the Monitor Plugin to retrieve subscribed measures and store
-	 * measurements.
-	 *
-	 * <p>
-	 * This method is called at the scheduled intervals. If the Plugin execution
-	 * takes longer than the schedule interval, subsequent calls to
-	 * {@link #execute(MonitorEnvironment)} will be skipped until this method
-	 * returns. After the execution duration exceeds the schedule timeout,
-	 * {@link TaskEnvironment#isStopped()} will return <tt>true</tt>. In this
-	 * case execution should be stopped as soon as possible. If the Plugin
-	 * ignores {@link TaskEnvironment#isStopped()} or fails to stop execution in
-	 * a reasonable timeframe, the execution thread will be stopped ungracefully
-	 * which might lead to resource leaks!
-	 *
-	 * @param env
-	 *            a <tt>MonitorEnvironment</tt> object that contains the
-	 *            Plugin configuration and subscribed measures. These
-	*            <tt>MonitorMeasure</tt>s can be used to store measurements.
-	 * @return a <tt>Status</tt> object that describes the result of the
-	 *         method call
-	 */
 	@Override
 	public Status execute(MonitorEnvironment env) throws Exception
 	{	
@@ -128,7 +85,6 @@ public class Plugin implements Monitor {
 		 */
 		String strDataGranularity = env.getConfigString(IConstants.DATA_GRANULARITY);
 		
-		// TODO - Return error codes during error checking.
 		if (strAccessKey == null | strAccessKey.isEmpty())
 		{
 			log.severe("Missing Access Key. Please configure monitor correctly.");
@@ -140,7 +96,11 @@ public class Plugin implements Monitor {
 			log.severe("Missing AWS Region. Defaulting to eu-west-2. Please configure monitor correctly.");
 			strAWSRegion = "eu-west-2";
 		}
-		if (strLoadBalancerName == null | strLoadBalancerName.isEmpty()) log.severe("Missing Load Balancer Name. Please configure monitor correctly.");
+		if (strLoadBalancerName == null | strLoadBalancerName.isEmpty())
+		{
+			log.severe("Missing Load Balancer Name. Please configure monitor correctly.");
+			return new Status(Status.StatusCode.ErrorInternalConfigurationProblem);
+		}
 		
 		BasicAWSCredentials oCredentials = new BasicAWSCredentials(strAccessKey, strSecretAccessKey);
         AWSStaticCredentialsProvider oProvider = new AWSStaticCredentialsProvider(oCredentials);
@@ -155,7 +115,7 @@ public class Plugin implements Monitor {
         
         List<GetMetricStatisticsResult> oResultList = new ArrayList<GetMetricStatisticsResult>();
 
-        // Get LB Metric Results from AWS
+        // Get LB Metric Results from AWS. This is where the external call is made out to AWS.
         for(String strMetric : m_oLBMetrics)
         {
         	log.fine("[DEBUG] LB Name: " + strLoadBalancerName + " - Metric: " + strMetric);
@@ -170,46 +130,8 @@ public class Plugin implements Monitor {
 		return new Status(Status.StatusCode.Success);
 	}
 
-	/**
-	 * Shuts the Plugin down and frees resources. This method is called in the
-	 * following cases:
-	 * <ul>
-	 * <li>the <tt>setup</tt> method failed</li>
-	 * <li>the Plugin configuration has changed</li>
-	 * <li>the execution duration of the Plugin exceeded the schedule timeout</li>
-	 * <li>the schedule associated with this Plugin was removed</li>
-	 * </ul>
-	 *
-	 * <p>
-	 * The Plugin methods <tt>setup</tt>, <tt>execute</tt> and
-	 * <tt>teardown</tt> are called on different threads, but they are called
-	 * sequentially. This means that the execution of these methods does not
-	 * overlap, they are executed one after the other.
-	 *
-	 * <p>
-	 * Examples:
-	 * <ul>
-	 * <li><tt>setup</tt> (failed) -&gt; <tt>teardown</tt></li>
-	 * <li><tt>execute</tt> starts, configuration changes, <tt>execute</tt>
-	 * ends -&gt; <tt>teardown</tt><br>
-	 * on next schedule interval: <tt>setup</tt> -&gt; <tt>execute</tt> ...</li>
-	 * <li><tt>execute</tt> starts, execution duration timeout,
-	 * <tt>execute</tt> stops -&gt; <tt>teardown</tt></li>
-	 * <li><tt>execute</tt> starts, <tt>execute</tt> ends, schedule is
-	 * removed -&gt; <tt>teardown</tt></li>
-	 * </ul>
-	 * Failed means that either an unhandled exception is thrown or the status
-	 * returned by the method contains a non-success code.
-	 *
-	 *
-	 * <p>
-	 * All by the Plugin allocated resources should be freed in this method.
-	 * Examples are opened sockets or files.
-	 *
-	 * @see Monitor#setup(MonitorEnvironment)
-	 */	@Override
+	@Override
 	public void teardown(MonitorEnvironment env) throws Exception {
-		// TODO
 	}
 	 
 	//********************
@@ -217,13 +139,18 @@ public class Plugin implements Monitor {
 	//********************
 	private GetMetricStatisticsResult getLBMetricResult(AmazonCloudWatch oClient, String strLoadBalancerName, String strMetricName, String strDataGranularity)
 	{
-		//TODO - There's an easier way to say one hour behind etc.
-		//TODO - Make this dynamic
+		/*
+		 * Calculate start and end time.
+		 * This relies on the user-inputtable parameter.
+		 * This MUST match the schedule for the plugin.
+		 * eg. If the monitor runs every 10mins, the user MUST set this to be 10 mins.
+		 * For possible values, see IConstants file.
+		 */
 		Date endTime = new Date();
 		int dataGranularity = calculateDataGranularity(strDataGranularity);
-		//int oneHour = 60 * 60 * 1000;
-		Date startTime = new Date(endTime.getTime() - dataGranularity);
+		Date startTime = new Date(endTime.getTime() - dataGranularity); // Go back "dataGranularity" and pull data starting from then.
 	
+		// Build the AWS request. Get all aggregations for the selected metric and load balancer.
 	    GetMetricStatisticsRequest oMetricRequest = new GetMetricStatisticsRequest()
 	            .withStartTime(startTime)
 	            .withNamespace(IConstants.AWS_NAMESPACE)
@@ -234,6 +161,8 @@ public class Plugin implements Monitor {
 	            .withEndTime(endTime);
 	    
 	    GetMetricStatisticsResult oResult = null;
+	    
+	    // Now actually go out to AWS and get the metrics. This can fail.
 	    try
 	    {
 	    	oResult = oClient.getMetricStatistics(oMetricRequest);
@@ -255,41 +184,34 @@ public class Plugin implements Monitor {
 	 */
 	private int calculateDataGranularity(String strDataGranularity)
 	{
-		//TODO - Error Checking
 		if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_1MIN))
 		{
-			// Do 1 min TODO
-			log.info("1min granularity");
+			log.finer("1min granularity");
 			return 60 * 1000;
 		}
 		else if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_5MINS))
 		{
-			// Do 5 mins TODO
-			log.info("5mins granularity");
+			log.finer("5mins granularity");
 			return 60 * 5 * 1000;
 		}
 		else if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_10MINS))
 		{
-			// Do 10 mins TODO
-			log.info("10 mins granularity");
+			log.finer("10 mins granularity");
 			return 60 * 10 * 1000;
 		}
 		else if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_15MINS))
 		{
-			// Do 15 mins TODO
-			log.info("15 mins granularity");
+			log.finer("15 mins granularity");
 			return 60 * 15 * 1000;
 		}
 		else if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_30MINS))
 		{
-			// Do 30 mins TODO
-			log.info("30 mins granularity");
+			log.finer("30 mins granularity");
 			return 60 * 30 * 1000;
 		}
 		else if (strDataGranularity.equals(IConstants.DATA_GRANULARITY_1HOUR))
 		{
-			// Do 1 hour TODO
-			log.info("1 hour granularity");
+			log.finer("1 hour granularity");
 			return 60 * 60 * 1000;
 		}
 		else
@@ -313,7 +235,6 @@ public class Plugin implements Monitor {
 				
 				log.fine("oResultDatapoints Size: " + oResultDatapoints.size()); // Need to make sure this is always 1.
 				
-				//TODO - Move this repeated logic into separate method
 				// For each target aggregation, push the data into DT
 				for (String strAggregation : m_oAggregationList)
 				{
@@ -326,6 +247,9 @@ public class Plugin implements Monitor {
 						{
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getMinimum();
+							
+							log.finer("Setting value for MIN: " + dValue);
+							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
 					}
@@ -336,6 +260,9 @@ public class Plugin implements Monitor {
 						{
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getAverage();
+							
+							log.finer("Setting value for AVG: " + dValue);
+							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
 					}
@@ -346,6 +273,9 @@ public class Plugin implements Monitor {
 						{
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getMaximum();
+							
+							log.finer("Setting value for MAX: " + dValue);
+							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
 					}
@@ -357,7 +287,7 @@ public class Plugin implements Monitor {
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getSum();
 							
-							log.info("++++++++++++ dValue: " + dValue);
+							log.finer("Setting value for SUM: " + dValue);
 							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
@@ -369,6 +299,9 @@ public class Plugin implements Monitor {
 						{
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getSampleCount();
+							
+							log.finer("Setting value for SAMPLE COUNT: " + dValue);
+							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
 					}
@@ -383,7 +316,7 @@ public class Plugin implements Monitor {
 		
 	/*  Helper Method 
 	 *  Find the AWS GetMetricStatisticsResult which matches the input String
-	 *  and return it's datapoints.
+	 *  and return its datapoints.
 	 *  eg. datapoints which matches "RequestCount"
 	 */
 	private List<Datapoint> getResultMetricDatapoints(String strMeasureName, List<GetMetricStatisticsResult> oResultList)
@@ -395,5 +328,4 @@ public class Plugin implements Monitor {
 		
 		return new ArrayList<Datapoint>();
 	}
-	 
 }
