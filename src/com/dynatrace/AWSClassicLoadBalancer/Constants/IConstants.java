@@ -1,8 +1,5 @@
 package com.dynatrace.AWSClassicLoadBalancer.Constants;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public interface IConstants
 {
 	// Plugin input configuration variables

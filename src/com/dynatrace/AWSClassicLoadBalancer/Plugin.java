@@ -128,7 +128,7 @@ public class Plugin implements Monitor {
 		 */
 		String strDataGranularity = env.getConfigString(IConstants.DATA_GRANULARITY);
 		
-		//TODO - Error Checking
+		// TODO - Return error codes during error checking.
 		if (strAccessKey == null | strAccessKey.isEmpty())
 		{
 			log.severe("Missing Access Key. Please configure monitor correctly.");
@@ -356,6 +356,9 @@ public class Plugin implements Monitor {
 						{
 							// AWS returns -1 in case of no data. Only push metrics to DT if data is valid.
 							double dValue = oDP.getSum();
+							
+							log.info("++++++++++++ dValue: " + dValue);
+							
 							if (dValue >= 0) oDynamicMeasure.setValue(dValue);
 						}
 					}
