@@ -118,7 +118,8 @@ public class Plugin implements Monitor
         for(String strMetric : m_oLBMetrics)
         {
         	log.fine("[DEBUG] LB Name: " + strLoadBalancerName + " - Metric: " + strMetric);
-        	oResultList.add(getLBMetricResult(oClient,strLoadBalancerName, strMetric, strDataGranularity));
+        	GetMetricStatisticsResult oResult = getLBMetricResult(oClient,strLoadBalancerName, strMetric, strDataGranularity);
+        	if (oResult != null) oResultList.add(oResult);
         }
         
         log.fine("[DEBUG] Result List Size: " + oResultList.size());
@@ -322,6 +323,7 @@ public class Plugin implements Monitor
 	{
 		for (GetMetricStatisticsResult oTmpResult : oResultList)
 		{
+			if (oTmpResult == null) continue;
 			if (oTmpResult.getLabel().equals(strMeasureName)) return oTmpResult.getDatapoints();
 		}
 		
