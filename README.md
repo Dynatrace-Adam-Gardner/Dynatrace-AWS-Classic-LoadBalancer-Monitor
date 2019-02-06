@@ -1,4 +1,4 @@
-# Dynatrace-AWS-Classic-LoadBalancer-Monitor
+# Dynatrace-AppMon-AWS-Classic-LoadBalancer-Monitor
 
 Author: Adam Gardner (adam.gardner@dynatrace.com)
 
